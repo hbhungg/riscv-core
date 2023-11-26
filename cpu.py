@@ -27,7 +27,44 @@ class Ops(Enum):
   SYSTEM = 0b1110011
 
 class Funct3(Enum):
-  ADDI = 0b000
+  # OP and IMM
+  ADD = SUB = ADDI = 0b000
+  SLLI = 0b001
+  SLT = SLTI = 0b010
+  SLTU = SLTIU = 0b011
+
+  XOR = XORI = 0b100
+  SRL = SRLI = SRA = SRAI = 0b101
+  OR = ORI = 0b110
+  AND = ANDI = 0b111
+
+  # BRANCH 
+  BEQ = 0b000
+  BNE = 0b001
+  BLT = 0b100
+  BGE = 0b101
+  BLTU = 0b110
+  BGEU = 0b111
+
+  # LOAD and STORE
+  LB = SB = 0b000
+  LH = SH = 0b001
+  LW = SW = 0b010
+  LBU = 0b100
+  LHU = 0b101
+
+  # MISC (are we going to use these?)
+  FENCE = 0b000
+  FENCEI = 0b001
+
+  # SYSTEM
+  ECALL = 0b000
+  CSRRW = 0b001
+  CSRRS = 0b010
+  CSRRC = 0b011
+  CSRRWI = 0b101
+  CSRRSI = 0b110
+  CSRRCI = 0b111
 
 class InvalidMemory(Exception):
   def __init__(self, message="Invalid memory address"):
