@@ -11,8 +11,20 @@ def sign_extend(x, l):
   return -((1 << l) - x) if x >> (l-1) == 1 else x
 
 class Ops(Enum):
+  LUI = 0b0110111
+  LOAD = 0b0000011
+  STORE = 0b0100011
+  AUIPC = 0b0010111
+
   JAL = 0b1101111
+  JALR = 0b1100111
+  BRANCH = 0b1100011
+
+  OP = 0b0110011
   IMM = 0b0010011
+
+  MISC = 0b0001111
+  SYSTEM = 0b1110011
 
 class Funct3(Enum):
   ADDI = 0b000
