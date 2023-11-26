@@ -7,7 +7,8 @@ MAGIC_START = 0x80000000
 def bitrange(ins, s, e):
   return (ins >> e) & ((1 << (s - e + 1)) - 1)
 
-def sign_extend(x, l):
+def sext(x, l):
+  # https://en.wikipedia.org/wiki/Sign_extension
   return -((1 << l) - x) if x >> (l-1) == 1 else x
 
 class Ops(Enum):
@@ -119,14 +120,14 @@ class CPU:
 
     # J-type
     if opcode == Ops.JAL:
-      imm = sign_extend((bitrange(ins, 32, 31) << 20 | bitrange(ins, 19, 12) << 12 | bitrange(ins, 21, 20) << 11 | bitrange(ins, 30, 21) << 1), 21)
+      imm = sext((bitrange(ins, 32, 31) << 20 | bitrange(ins, 19, 12) << 12 | bitrange(ins, 21, 20) << 11 | bitrange(ins, 30, 21) << 1), 21)
       self.regs[Register.PC] += imm
       print(opcode, imm)
     # I-type
     if opcode == Ops.IMM:
       funct3 = Funct3(bitrange(ins, 14, 12))
       rs1 = bitrange(ins, 19, 15)
-      imm = sign_extend(bitrange(ins, 31, 20), 12)
+      imm = sext(bitrange(ins, 31, 20), 12)
       print(opcode, funct3, rs1, imm)
     
     print(self.regs)
