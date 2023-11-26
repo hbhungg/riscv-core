@@ -8,13 +8,14 @@ def bitrange(ins, s, e):
   return (ins >> e) & ((1 << (s - e + 1)) - 1)
 
 def sign_extend(x, l):
-  if x >> (l-1) == 1:
-    return -((1 << l) - x)
-  else:
-    return x
+  return -((1 << l) - x) if x >> (l-1) == 1 else x
 
-class OPS(Enum):
+class Ops(Enum):
   JAL = 0b1101111
+  IMM = 0b0010011
+
+class Funct3(Enum):
+  ADDI = 0b000
 
 class InvalidMemory(Exception):
   def __init__(self, message="Invalid memory address"):
@@ -58,20 +59,29 @@ class CPU:
     raise NotImplementedError
   
   def step(self):
-    print(self.regs)
     # Fetch
     ins = self.read32(self.regs[Register.PC])
+    print(bin(ins), hex(ins))
 
     # Decode
-    opcode = OPS(bitrange(ins, 6, 0))
-    print(hex(ins), opcode)
-    # J-type
-    imm = sign_extend((bitrange(ins, 32, 31) << 20 | bitrange(ins, 19, 12) << 12 | bitrange(ins, 21, 20) << 11 | bitrange(ins, 30, 21) << 1), 21)
+    opcode = Ops(bitrange(ins, 6, 0))
+    # Write back register
     rd = bitrange(ins, 11, 7)
-    if opcode == OPS.JAL:
+
+    # J-type
+    if opcode == Ops.JAL:
+      imm = sign_extend((bitrange(ins, 32, 31) << 20 | bitrange(ins, 19, 12) << 12 | bitrange(ins, 21, 20) << 11 | bitrange(ins, 30, 21) << 1), 21)
       self.regs[Register.PC] += imm
+      print(opcode, imm)
+    # I-type
+    if opcode == Ops.IMM:
+      funct3 = Funct3(bitrange(ins, 14, 12))
+      rs1 = bitrange(ins, 19, 15)
+      imm = sign_extend(bitrange(ins, 31, 20), 12)
+      print(opcode, funct3, rs1, imm)
     
     print(self.regs)
+    print()
   
 
   def coredump(self, start_addr=MAGIC_START, l=16, filename=None):
@@ -86,6 +96,6 @@ class CPU:
         print(f"0x{i*4+MAGIC_START:08x} {row}")
 
   def run(self):
-    while True:
+    # while True:
+    for _ in range(2):
       self.step()
-      break
