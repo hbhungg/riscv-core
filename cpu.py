@@ -73,21 +73,21 @@ class InvalidMemory(Exception):
 
 class Register:
   PC = 32
-  def __init__(self, *args, **kwargs):
-    self.regs = [0]*33
-  def __getitem__(self, key):
-    return self.regs[key]
+  def __init__(self, *args, **kwargs): self.regs = [0]*33
+  def __getitem__(self, key): return self.regs[key]
   def __setitem__(self, key, val):
+    # Write to reg 0 will have no effect since it is hardwire to 0
     if key == 0: return
     self.regs[key] = val & 0xffffffff
+  def hexfmt(self, key): return f"{self.regs[key]:08x}" # Format hex 08x
   def __repr__(self):
-    return f"PC: {self.regs[32]:08x}"
+    return '\n'.join([' '.join([f"x{4*i+j}: {self.hexfmt(4*i+j)}".rjust(14) for j in range(4)]) for i in range(8)]) + f"\n  PC: {self.hexfmt(32)}"
 
 
 class CPU:
-  def __init__(self):
-    self.regs = Register()
-    self.regs[Register.PC] = MAGIC_START
+  def __init__(self, register=Register()):
+    self.register = register
+    self.register[Register.PC] = MAGIC_START
     # 16KB at 0x80000000
     self.memory = b'\x00'*0x4000
   
@@ -101,7 +101,7 @@ class CPU:
     if addr < 0 and addr >= len(self.memory): raise InvalidMemory(f"Address {addr:08x} is out of bound for {len(self.memory):08x}")
     return struct.unpack("<I", self.memory[addr:addr+4])[0]
   
-  # TOOD: For refractoring?
+  # TODO: For refractoring?
   def decode(self, ins):
     raise NotImplementedError
   
@@ -110,7 +110,7 @@ class CPU:
   
   def step(self):
     # Fetch
-    ins = self.read32(self.regs[Register.PC])
+    ins = self.read32(self.register[Register.PC])
     print(bin(ins), hex(ins))
 
     # Decode
@@ -121,16 +121,22 @@ class CPU:
     # J-type
     if opcode == Ops.JAL:
       imm = sext((bitrange(ins, 32, 31) << 20 | bitrange(ins, 19, 12) << 12 | bitrange(ins, 21, 20) << 11 | bitrange(ins, 30, 21) << 1), 21)
-      self.regs[Register.PC] += imm
-      print(opcode, imm)
+      self.register[Register.PC] += imm
+      print(self.register.hexfmt(32), opcode, imm, rd)
     # I-type
     if opcode == Ops.IMM:
       funct3 = Funct3(bitrange(ins, 14, 12))
       rs1 = bitrange(ins, 19, 15)
       imm = sext(bitrange(ins, 31, 20), 12)
-      print(opcode, funct3, rs1, imm)
-    
-    print(self.regs)
+      if funct3 == Funct3.ADDI:
+        print(self.register.hexfmt(32), opcode, Funct3.ADDI, rd, rs1, imm)
+        self.register[rd] = imm
+      self.register[Register.PC] += 4
+    else:
+      print(self.register.hexfmt(32), opcode)
+      self.register[Register.PC] += 4
+
+    print(self.register)
     print()
   
 
@@ -147,5 +153,5 @@ class CPU:
 
   def run(self):
     # while True:
-    for _ in range(2):
+    for _ in range(32):
       self.step()
