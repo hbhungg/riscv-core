@@ -1,3 +1,4 @@
-riscv-tests
-venv
+riscv-tests/
+venv/
 __pycache__/
+*pdf
