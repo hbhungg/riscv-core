@@ -1,13 +1,17 @@
 from enum import Enum
 import binascii
 import struct
+import os
+
+from utils import REGISTERS_NAME
 
 MAGIC_START = 0x80000000
+DEBUG = int(os.getenv("DEBUG", 0))
 
 def bitrange(ins, s, e):
   return (ins >> e) & ((1 << (s - e + 1)) - 1)
 
-def sext(x, l):
+def sign_ext(x, l):
   # https://en.wikipedia.org/wiki/Sign_extension
   return -((1 << l) - x) if x >> (l-1) == 1 else x
 
@@ -81,7 +85,7 @@ class Register:
     self.regs[key] = val & 0xffffffff
   def hexfmt(self, key): return f"{self.regs[key]:08x}" # Format hex 08x
   def __repr__(self):
-    return '\n'.join([' '.join([f"x{4*i+j}: {self.hexfmt(4*i+j)}".rjust(14) for j in range(4)]) for i in range(8)]) + f"\n  PC: {self.hexfmt(32)}"
+    return '\n'.join([' '.join([f"{REGISTERS_NAME[4*i+j]}: {self.hexfmt(4*i+j)}".rjust(14) for j in range(4)]) for i in range(8)]) + f"\n  PC: {self.hexfmt(32)}"
 
 
 class CPU:
@@ -108,10 +112,16 @@ class CPU:
   def execute(self, opcode, *args):
     raise NotImplementedError
   
+  def alu(self):
+    """
+    Arithmetic Logic Unit
+    """
+    raise NotImplementedError
+  
   def step(self):
     # Fetch
     ins = self.read32(self.register[Register.PC])
-    print(bin(ins), hex(ins))
+    if DEBUG > 0: print(bin(ins), hex(ins))
 
     # Decode
     opcode = Ops(bitrange(ins, 6, 0))
@@ -120,24 +130,28 @@ class CPU:
 
     # J-type
     if opcode == Ops.JAL:
-      imm = sext((bitrange(ins, 32, 31) << 20 | bitrange(ins, 19, 12) << 12 | bitrange(ins, 21, 20) << 11 | bitrange(ins, 30, 21) << 1), 21)
+      imm = sign_ext((bitrange(ins, 32, 31) << 20 | bitrange(ins, 19, 12) << 12 | bitrange(ins, 21, 20) << 11 | bitrange(ins, 30, 21) << 1), 21)
+      if DEBUG > 0: print(self.register.hexfmt(32), opcode, hex(imm))
       self.register[Register.PC] += imm
-      print(self.register.hexfmt(32), opcode, imm, rd)
     # I-type
-    if opcode == Ops.IMM:
+    elif opcode == Ops.IMM:
       funct3 = Funct3(bitrange(ins, 14, 12))
       rs1 = bitrange(ins, 19, 15)
-      imm = sext(bitrange(ins, 31, 20), 12)
+      imm = sign_ext(bitrange(ins, 31, 20), 12)
       if funct3 == Funct3.ADDI:
-        print(self.register.hexfmt(32), opcode, Funct3.ADDI, rd, rs1, imm)
+        if DEBUG > 0: print(self.register.hexfmt(32), opcode, "ADDI", REGISTERS_NAME[rd], REGISTERS_NAME[rs1], imm)
         self.register[rd] = imm
       self.register[Register.PC] += 4
+    elif opcode == Ops.AUIPC:
+      im = sign_ext(bitrange(ins, 31, 12), 20)
+      if DEBUG > 0: print(self.register.hexfmt(32), opcode, REGISTERS_NAME[rd], im)
+      raise NotImplementedError
     else:
-      print(self.register.hexfmt(32), opcode)
+      if DEBUG > 0: print(self.register.hexfmt(32), opcode, REGISTERS_NAME[rd])
       self.register[Register.PC] += 4
+      raise NotImplementedError
 
-    print(self.register)
-    print()
+    if DEBUG > 1: print(self.register, end="\n")
   
 
   def coredump(self, start_addr=MAGIC_START, l=16, filename=None):
@@ -152,6 +166,6 @@ class CPU:
         print(f"0x{i*4+MAGIC_START:08x} {row}")
 
   def run(self):
-    # while True:
-    for _ in range(32):
+    while True:
+    # for _ in range(5):
       self.step()
