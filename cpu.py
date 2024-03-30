@@ -85,7 +85,7 @@ class Register:
     self.regs[key] = val & 0xffffffff
   def hexfmt(self, key): return f"{self.regs[key]:08x}" # Format hex 08x
   def __repr__(self):
-    return '\n'.join([' '.join([f"{REGISTERS_NAME[4*i+j]}: {self.hexfmt(4*i+j)}".rjust(14) for j in range(4)]) for i in range(8)]) + f"\n  PC: {self.hexfmt(32)}"
+    return "---- Register state ----\n" + "\n".join([" ".join([f"{REGISTERS_NAME[4*i+j]}: {self.hexfmt(4*i+j)}".rjust(16) for j in range(4)]) for i in range(8)]) + f"\nPC: {self.hexfmt(32)}\n"
 
 
 class CPU:
@@ -121,7 +121,7 @@ class CPU:
   def step(self):
     # Fetch
     ins = self.read32(self.register[Register.PC])
-    if DEBUG > 0: print(bin(ins), hex(ins))
+    if DEBUG > 1: print(f"Raw instruction: {bin(ins)} ({hex(ins)})")
 
     # Decode
     opcode = Ops(bitrange(ins, 6, 0))
