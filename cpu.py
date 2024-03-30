@@ -83,7 +83,7 @@ class Register:
     # Write to reg 0 will have no effect since it is hardwire to 0
     if key == 0: return
     self.regs[key] = val & 0xffffffff
-  def hexfmt(self, key): return f"{self.regs[key]:08x}" # Format hex 08x
+  def hexfmt(self, key): return f"{self.regs[key]:08x}" if self.regs[key] != 0 else " "*7 + "0" # Format hex 08x
   def __repr__(self):
     return "---- Register state ----\n" + "\n".join([" ".join([f"{REGISTERS_NAME[4*i+j]}: {self.hexfmt(4*i+j)}".rjust(16) for j in range(4)]) for i in range(8)]) + f"\nPC: {self.hexfmt(32)}\n"
 
@@ -139,19 +139,20 @@ class CPU:
       rs1 = bitrange(ins, 19, 15)
       imm = sign_ext(bitrange(ins, 31, 20), 12)
       if funct3 == Funct3.ADDI:
-        if DEBUG > 0: print(self.register.hexfmt(32), opcode, "ADDI", REGISTERS_NAME[rd], REGISTERS_NAME[rs1], imm)
-        self.register[rd] = imm
-      self.register[Register.PC] += 4
+        if DEBUG > 0: print(self.register.hexfmt(32), opcode, "ADDI", REGISTERS_NAME[rd], REGISTERS_NAME[rs1], hex(imm))
+        self.register[rd] = self.register[rs1] + imm
     elif opcode == Ops.AUIPC:
-      im = sign_ext(bitrange(ins, 31, 12), 20)
-      if DEBUG > 0: print(self.register.hexfmt(32), opcode, REGISTERS_NAME[rd], im)
-      raise NotImplementedError
+      imm = bitrange(ins, 31, 12) << 12
+      self.register[rd] = self.register[Register.PC] + imm
+      if DEBUG > 0: print(self.register.hexfmt(32), opcode, REGISTERS_NAME[rd], hex(imm))
     else:
       if DEBUG > 0: print(self.register.hexfmt(32), opcode, REGISTERS_NAME[rd])
-      self.register[Register.PC] += 4
       raise NotImplementedError
 
     if DEBUG > 1: print(self.register, end="\n")
+
+    # Next instruction
+    self.register[Register.PC] += 4
   
 
   def coredump(self, start_addr=MAGIC_START, l=16, filename=None):
