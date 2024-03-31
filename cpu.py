@@ -98,16 +98,16 @@ class CPU:
     self.register = register
     self.register[Register.PC] = MAGIC_START
     # 16KB at 0x80000000
-    self.memory = b'\x00'*0x4000
+    self.memory = b'\x00' * 0x4000
   
   def load(self, addr, data):
     addr -= MAGIC_START
-    if addr < 0 and addr >= len(self.memory): raise InvalidMemory(f"Address {addr:08x} is out of bound for {len(self.memory):08x}")
+    if addr < 0 or addr >= len(self.memory): raise InvalidMemory(f"Address {addr:08x} is out of bound for {len(self.memory):08x}")
     self.memory = self.memory[:addr] + data + self.memory[addr+len(data):]
   
   def read32(self, addr):
     addr -= MAGIC_START
-    if addr < 0 and addr >= len(self.memory): raise InvalidMemory(f"Address {addr:08x} is out of bound for {len(self.memory):08x}")
+    if addr < 0 or addr >= len(self.memory): raise InvalidMemory(f"Address {addr:08x} is out of bound for {len(self.memory):08x}")
     return struct.unpack("<I", self.memory[addr:addr+4])[0]
   
   def condition(self, funct3:Funct3, x:int, y:int):
