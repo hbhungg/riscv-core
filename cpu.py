@@ -109,18 +109,16 @@ class CPU:
     if addr < 0 and addr >= len(self.memory): raise InvalidMemory(f"Address {addr:08x} is out of bound for {len(self.memory):08x}")
     return struct.unpack("<I", self.memory[addr:addr+4])[0]
   
-  # TODO: For refractoring?
-  def decode(self, ins):
-    raise NotImplementedError
-  
-  def execute(self, opcode, *args):
-    raise NotImplementedError
-  
-  def alu(self):
+  def alu(self, funct3, rd:int, x:int, y:int):
     """
     Arithmetic Logic Unit
     """
-    raise NotImplementedError
+    if funct3 == Funct3.ADD:
+      self.register[rd] = x + y
+    elif funct3 == Funct3.SLLI:
+      self.register[rd] = x << y
+    else:
+      raise NotImplementedError
   
   def step(self):
     # -------------- FETCH -------------- 
@@ -146,21 +144,28 @@ class CPU:
 
 
     # -------------- EXECUTE -------------- 
-    # J-type
     if opcode == Ops.JAL:
-      if DEBUG > 0: print(self.register.hexfmt(32), opcode, hex(imm_j))
-      self.register[Register.PC] += imm_j
-    # I-type
+      if DEBUG > 0: print(self.register.hexfmt(32), opcode, REGISTERS_NAME[rd], hex(imm_j))
+      self.register[rd] = self.register[Register.PC] + 4  # Store the next instruction addr
+      self.register[Register.PC] += imm_j # Perform a jump
+    elif opcode == Ops.JALR:
+      if DEBUG > 0: print(self.register.hexfmt(32), opcode, REGISTERS_NAME[rd], REGISTERS_NAME[rs1], hex(imm_i))
+      raise NotImplementedError
     elif opcode == Ops.IMM:
-      if funct3 == Funct3.ADDI:
-        if DEBUG > 0: print(self.register.hexfmt(32), opcode, "ADDI", REGISTERS_NAME[rd], REGISTERS_NAME[rs1], hex(imm_i))
-        self.register[rd] = self.register[rs1] + imm_i
+      if DEBUG > 0: print(self.register.hexfmt(32), opcode, funct3, REGISTERS_NAME[rd], REGISTERS_NAME[rs1], hex(imm_i))
+      self.alu(funct3, rd, self.register[rs1], imm_i)
     elif opcode == Ops.AUIPC:
-      self.register[rd] = self.register[Register.PC] + imm_u
+      # self.register[rd] = self.register[Register.PC] + imm_u
+      self.alu(funct3.ADD, rd, self.register[Register.PC], imm_u)
       if DEBUG > 0: print(self.register.hexfmt(32), opcode, REGISTERS_NAME[rd], hex(imm_u))
     elif opcode == Ops.SYSTEM:
-      if DEBUG > 0: print(self.register.hexfmt(32), opcode, REGISTERS_NAME[rd])
-      raise NotImplementedError
+      if funct3 == Funct3.ECALL:
+        if DEBUG > 0: print(self.register.hexfmt(32), opcode, funct3, REGISTERS_NAME[rd])
+        raise NotImplementedError
+      if DEBUG > 0: print(self.register.hexfmt(32), opcode, "SKIP")
+    elif opcode == Ops.OP:
+      if DEBUG > 0: print(self.register.hexfmt(32), opcode, funct3, REGISTERS_NAME[rd], REGISTERS_NAME[rs1], REGISTERS_NAME[rs2])
+      self.alu(funct3, rd, self.register[rs1], self.register[rs2])
     else:
       if DEBUG > 0: print(self.register.hexfmt(32), opcode, REGISTERS_NAME[rd])
       raise NotImplementedError
