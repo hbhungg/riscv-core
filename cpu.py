@@ -8,10 +8,14 @@ from utils import REGISTERS_NAME
 MAGIC_START = 0x80000000
 DEBUG = int(os.getenv("DEBUG", 0))
 
-def bitrange(ins, s, e):
+def bitrange(ins:int, s:int, e:int) -> int:
+  """
+  Slice ins[s, e], inclusive
+  """
   return (ins >> e) & ((1 << (s - e + 1)) - 1)
 
-def sign_ext(x, l):
+def sign_ext(x:int, l:int):
+  # Extend x to l length while preserving its sign
   # https://en.wikipedia.org/wiki/Sign_extension
   return -((1 << l) - x) if x >> (l-1) == 1 else x
 
@@ -119,32 +123,44 @@ class CPU:
     raise NotImplementedError
   
   def step(self):
-    # Fetch
+    # -------------- FETCH -------------- 
     ins = self.read32(self.register[Register.PC])
     if DEBUG > 1: print(f"Raw instruction: {bin(ins)} ({hex(ins)})")
 
-    # Decode
+
+    # -------------- DECODE -------------- 
     opcode = Ops(bitrange(ins, 6, 0))
+    # Immediate decode
+    imm_i = sign_ext(bitrange(ins, 31, 20), 12)
+    imm_s = sign_ext((bitrange(ins, 32, 25) << 5) | bitrange(ins, 11, 7), 12)
+    imm_b = sign_ext((bitrange(ins, 32, 31) << 12) | (bitrange(ins, 30, 25) << 5) | (bitrange(ins, 11, 8) << 1) | (bitrange(ins, 8, 7) << 11), 13)
+    imm_u = sign_ext(bitrange(ins, 31, 12) << 12, 32)
+    imm_j = sign_ext((bitrange(ins, 32, 31) << 20) | (bitrange(ins, 19, 12) << 12) | (bitrange(ins, 21, 20) << 11) | (bitrange(ins, 30, 21) << 1), 21)
+    funct3 = Funct3(bitrange(ins, 14, 12))
+    funct7 = bitrange(ins, 31, 25)
     # Write back register
     rd = bitrange(ins, 11, 7)
+    # Read register
+    rs1 = bitrange(ins, 19, 15)
+    rs2 = bitrange(ins, 24, 20)
 
+
+    # -------------- EXECUTE -------------- 
     # J-type
     if opcode == Ops.JAL:
-      imm = sign_ext((bitrange(ins, 32, 31) << 20 | bitrange(ins, 19, 12) << 12 | bitrange(ins, 21, 20) << 11 | bitrange(ins, 30, 21) << 1), 21)
-      if DEBUG > 0: print(self.register.hexfmt(32), opcode, hex(imm))
-      self.register[Register.PC] += imm
+      if DEBUG > 0: print(self.register.hexfmt(32), opcode, hex(imm_j))
+      self.register[Register.PC] += imm_j
     # I-type
     elif opcode == Ops.IMM:
-      funct3 = Funct3(bitrange(ins, 14, 12))
-      rs1 = bitrange(ins, 19, 15)
-      imm = sign_ext(bitrange(ins, 31, 20), 12)
       if funct3 == Funct3.ADDI:
-        if DEBUG > 0: print(self.register.hexfmt(32), opcode, "ADDI", REGISTERS_NAME[rd], REGISTERS_NAME[rs1], hex(imm))
-        self.register[rd] = self.register[rs1] + imm
+        if DEBUG > 0: print(self.register.hexfmt(32), opcode, "ADDI", REGISTERS_NAME[rd], REGISTERS_NAME[rs1], hex(imm_i))
+        self.register[rd] = self.register[rs1] + imm_i
     elif opcode == Ops.AUIPC:
-      imm = bitrange(ins, 31, 12) << 12
-      self.register[rd] = self.register[Register.PC] + imm
-      if DEBUG > 0: print(self.register.hexfmt(32), opcode, REGISTERS_NAME[rd], hex(imm))
+      self.register[rd] = self.register[Register.PC] + imm_u
+      if DEBUG > 0: print(self.register.hexfmt(32), opcode, REGISTERS_NAME[rd], hex(imm_u))
+    elif opcode == Ops.SYSTEM:
+      if DEBUG > 0: print(self.register.hexfmt(32), opcode, REGISTERS_NAME[rd])
+      raise NotImplementedError
     else:
       if DEBUG > 0: print(self.register.hexfmt(32), opcode, REGISTERS_NAME[rd])
       raise NotImplementedError
