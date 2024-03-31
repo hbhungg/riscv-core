@@ -131,8 +131,12 @@ class CPU:
     """
     if funct3 == Funct3.ADD:
       self.register[rd] = x + y
+    # (y & 0x1f) is because we use the shamt (lower 5 bits) part of imm
     elif funct3 == Funct3.SLLI:
-      self.register[rd] = x << y
+      self.register[rd] = x << (y & 0x1f)
+    elif funct3 == Funct3.SRLI:
+      self.register[rd] = x >> (y & 0x1f)
+      raise NotImplementedError
     else:
       raise NotImplementedError
   
@@ -176,11 +180,6 @@ class CPU:
       # self.register[rd] = self.register[Register.PC] + imm_u
       self.alu(funct3.ADD, rd, self.register[Register.PC], imm_u)
       if DEBUG > 0: print(self.register.hexfmt(32), opcode, REGISTERS_NAME[rd], hex(imm_u))
-    elif opcode == Ops.SYSTEM:
-      if funct3 == Funct3.ECALL:
-        if DEBUG > 0: print(self.register.hexfmt(32), opcode, funct3, REGISTERS_NAME[rd])
-        raise NotImplementedError
-      if DEBUG > 0: print(self.register.hexfmt(32), opcode, "SKIP")
     elif opcode == Ops.OP:
       if DEBUG > 0: print(self.register.hexfmt(32), opcode, funct3, REGISTERS_NAME[rd], REGISTERS_NAME[rs1], REGISTERS_NAME[rs2])
       self.alu(funct3, rd, self.register[rs1], self.register[rs2])
@@ -188,6 +187,11 @@ class CPU:
       if DEBUG > 0: print(self.register.hexfmt(32), opcode, funct3, REGISTERS_NAME[rs1], REGISTERS_NAME[rs2], hex(imm_b))
       if self.condition(funct3, self.register[rs1], self.register[rs2]):
         self.register[Register.PC] += imm_b
+    elif opcode == Ops.SYSTEM:
+      if funct3 == Funct3.ECALL:
+        if DEBUG > 0: print(self.register.hexfmt(32), opcode, funct3, REGISTERS_NAME[rd])
+        raise NotImplementedError
+      if DEBUG > 0: print(self.register.hexfmt(32), opcode, "SKIP")
     else:
       if DEBUG > 0: print(self.register.hexfmt(32), opcode, REGISTERS_NAME[rd])
       raise NotImplementedError
