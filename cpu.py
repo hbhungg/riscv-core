@@ -2,6 +2,7 @@ from enum import Enum
 import binascii
 import struct
 import os
+from typing import Optional
 
 from utils import REGISTERS_NAME
 
@@ -109,7 +110,7 @@ class CPU:
     if addr < 0 and addr >= len(self.memory): raise InvalidMemory(f"Address {addr:08x} is out of bound for {len(self.memory):08x}")
     return struct.unpack("<I", self.memory[addr:addr+4])[0]
   
-  def condition(self, funct3:Funct3, x, y):
+  def condition(self, funct3:Funct3, x:int, y:int):
     if funct3 == Funct3.BEQ:
       return x == y
     elif funct3 == Funct3.BNE:
@@ -125,18 +126,23 @@ class CPU:
     else:
       raise NotImplementedError
 
-  def alu(self, funct3:Funct3, rd:int, x:int, y:int):
+  def alu(self, funct3:Funct3, rd:int, x:int, y:int, funct7:int):
     """
     Arithmetic Logic Unit
     """
     if funct3 == Funct3.ADD:
-      self.register[rd] = x + y
+      if funct7 == 0x0100000:
+        self.register[rd] = x - y
+      else:
+        self.register[rd] = x + y
     # (y & 0x1f) is because we use the shamt (lower 5 bits) part of imm
     elif funct3 == Funct3.SLLI:
       self.register[rd] = x << (y & 0x1f)
-    elif funct3 == Funct3.SRLI:
-      self.register[rd] = x >> (y & 0x1f)
-      raise NotImplementedError
+    elif funct3 == Funct3.SRL:
+      if funct7 == 0x0100000:
+        raise NotImplementedError
+      else:
+        self.register[rd] = x >> (y & 0x1f)
     else:
       raise NotImplementedError
   
@@ -169,24 +175,32 @@ class CPU:
       if DEBUG > 0: print(self.register.hexfmt(32), opcode, REGISTERS_NAME[rd], hex(imm_j))
       self.register[rd] = self.register[Register.PC] + 4  # Store the next instruction addr
       self.register[Register.PC] += imm_j # Perform a jump
+      return # HACK: REMOVE THIS
     elif opcode == Ops.JALR:
       if DEBUG > 0: print(self.register.hexfmt(32), opcode, REGISTERS_NAME[rd], REGISTERS_NAME[rs1], hex(imm_i))
       self.register[rd] = self.register[Register.PC] + 4  # Store the next instruction addr
       self.register[Register.PC] = self.register[rs1] + imm_i
+      return # HACK: REMOVE THIS
+    elif opcode == Ops.BRANCH:
+      if DEBUG > 0: print(self.register.hexfmt(32), opcode, funct3, REGISTERS_NAME[rs1], REGISTERS_NAME[rs2], hex(imm_b))
+      if self.condition(funct3, self.register[rs1], self.register[rs2]): # Check condition
+        self.register[Register.PC] += imm_b
+        return # HACK: REMOVE THIS
+
     elif opcode == Ops.IMM:
       if DEBUG > 0: print(self.register.hexfmt(32), opcode, funct3, REGISTERS_NAME[rd], REGISTERS_NAME[rs1], hex(imm_i))
-      self.alu(funct3, rd, self.register[rs1], imm_i)
+      self.alu(funct3, rd, self.register[rs1], imm_i, funct7)
     elif opcode == Ops.AUIPC:
-      # self.register[rd] = self.register[Register.PC] + imm_u
-      self.alu(funct3.ADD, rd, self.register[Register.PC], imm_u)
+      self.alu(funct3.ADD, rd, self.register[Register.PC], imm_u, funct7)
       if DEBUG > 0: print(self.register.hexfmt(32), opcode, REGISTERS_NAME[rd], hex(imm_u))
     elif opcode == Ops.OP:
       if DEBUG > 0: print(self.register.hexfmt(32), opcode, funct3, REGISTERS_NAME[rd], REGISTERS_NAME[rs1], REGISTERS_NAME[rs2])
-      self.alu(funct3, rd, self.register[rs1], self.register[rs2])
-    elif opcode == Ops.BRANCH:
-      if DEBUG > 0: print(self.register.hexfmt(32), opcode, funct3, REGISTERS_NAME[rs1], REGISTERS_NAME[rs2], hex(imm_b))
-      if self.condition(funct3, self.register[rs1], self.register[rs2]):
-        self.register[Register.PC] += imm_b
+      self.alu(funct3, rd, self.register[rs1], self.register[rs2], funct7)
+    
+    elif opcode == Ops.STORE:
+      if DEBUG > 0: print(self.register.hexfmt(32), opcode, funct3, REGISTERS_NAME[rd], REGISTERS_NAME[rs1], REGISTERS_NAME[rs2], hex(imm_s))
+      raise NotImplementedError
+
     elif opcode == Ops.SYSTEM:
       if funct3 == Funct3.ECALL:
         if DEBUG > 0: print(self.register.hexfmt(32), opcode, funct3, REGISTERS_NAME[rd])
