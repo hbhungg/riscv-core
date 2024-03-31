@@ -98,7 +98,7 @@ class CPU:
     self.register = register
     self.register[Register.PC] = MAGIC_START
     # 16KB at 0x80000000
-    self.memory = b'\x00' * 0x4000
+    self.memory = bytearray(b'\x00' * 0x40000)
   
   def load(self, addr, data):
     addr -= MAGIC_START
@@ -197,9 +197,27 @@ class CPU:
       if DEBUG > 0: print(self.register.hexfmt(32), opcode, funct3, REGISTERS_NAME[rd], REGISTERS_NAME[rs1], REGISTERS_NAME[rs2])
       self.alu(funct3, rd, self.register[rs1], self.register[rs2], funct7)
     
+    elif opcode == Ops.LOAD:
+      if DEBUG > 0: print(self.register.hexfmt(32), opcode, REGISTERS_NAME[rd], REGISTERS_NAME[rs1], hex(imm_i))
+      if funct3 == Funct3.LB:
+        raise NotImplementedError
+      elif funct3 == Funct3.LH:
+        raise NotImplementedError
+      elif funct3 == Funct3.LW:
+        raise NotImplementedError
+      elif funct3 == Funct3.LBU:
+        raise NotImplementedError
+      elif funct3 == Funct3.LHU:
+        raise NotImplementedError
     elif opcode == Ops.STORE:
-      if DEBUG > 0: print(self.register.hexfmt(32), opcode, funct3, REGISTERS_NAME[rd], REGISTERS_NAME[rs1], REGISTERS_NAME[rs2], hex(imm_s))
-      raise NotImplementedError
+      if DEBUG > 0: print(self.register.hexfmt(32), opcode, funct3, REGISTERS_NAME[rs1], REGISTERS_NAME[rs2], hex(imm_s))
+      if funct3 == Funct3.SB:
+        raise NotImplementedError
+      elif funct3 == Funct3.SH:
+        raise NotImplementedError
+      elif funct3 == Funct3.SW:
+        self.load(self.register[rs1] + imm_s, struct.pack("I", self.register[rs2]))
+      if DEBUG > 2: self.coredump(self.register[rs1]+imm_s-4, l=32)
 
     elif opcode == Ops.SYSTEM:
       if funct3 == Funct3.ECALL:
@@ -225,7 +243,7 @@ class CPU:
       # Print core dump
       for i in range(start_addr//4, start_addr//4+l, 4):
         row = ' '.join(f"0x{chunk.decode('utf-8')}" for chunk in dump[i: i+4])
-        print(f"0x{i*4+MAGIC_START:08x} {row}")
+        print(f"0x{i*4+MAGIC_START:08x}: {row}")
 
   def run(self):
     while True:
