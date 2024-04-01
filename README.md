@@ -1,4 +1,4 @@
-# smallcore
+# riscv-core
 A small RISC-V core in Python and Verilog
 
 # Prerequisite
