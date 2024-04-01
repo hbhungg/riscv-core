@@ -7,7 +7,7 @@ from cpu import CPU, InvalidMemory
 
 if __name__ == "__main__":
   riscv_tests = "riscv-tests/isa"
-  files = glob.glob(f"{riscv_tests}/rv32ui-v-*[!.dump]")
+  files = glob.glob(f"{riscv_tests}/rv32ui-p-*[!.dump]")
   cpu = CPU()
   for fn in files:
     print(fn)
