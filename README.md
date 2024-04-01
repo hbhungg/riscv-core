@@ -1,5 +1,5 @@
 # riscv-core
-A small RISC-V core in Python and Verilog
+A small RISC-V core in Python (and Verilog, soon)
 
 # Prerequisite
 RISC-V test suite: https://github.com/riscv-software-src/riscv-tests
