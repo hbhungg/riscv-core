@@ -3,6 +3,7 @@ import binascii
 import struct
 import os
 from typing import Optional
+from itertools import count
 
 from utils import REGISTERS_NAME
 
@@ -126,23 +127,33 @@ class CPU:
     else:
       raise NotImplementedError
 
-  def alu(self, funct3:Funct3, rd:int, x:int, y:int, funct7:int):
+  def alu(self, funct3:Funct3, x:int, y:int, funct7:int):
     """
     Arithmetic Logic Unit
     """
     if funct3 == Funct3.ADD:
       if funct7 == 0x0100000:
-        self.register[rd] = x - y
+        return x - y
       else:
-        self.register[rd] = x + y
+        return x + y
     # (y & 0x1f) is because we use the shamt (lower 5 bits) part of imm
     elif funct3 == Funct3.SLLI:
-      self.register[rd] = x << (y & 0x1f)
+      return x << (y & 0x1f)
     elif funct3 == Funct3.SRL:
       if funct7 == 0x0100000:
         raise NotImplementedError
       else:
-        self.register[rd] = x >> (y & 0x1f)
+        return x >> (y & 0x1f)
+    elif funct3 == Funct3.OR:
+      return x | y
+    elif funct3 == Funct3.AND:
+      return x & y
+    elif funct3 == Funct3.XOR:
+      return x ^ y
+    elif funct3 == Funct3.SLT:
+      return int(sign_ext(x, 32) < sign_ext(y, 32))
+    elif funct3 == Funct3.SLTU:
+      return int((x & 0xFFFFFFFF) < (y & 0xFFFFFFFF))
     else:
       raise NotImplementedError
   
@@ -168,6 +179,11 @@ class CPU:
     # Read register
     rs1 = bitrange(ins, 19, 15)
     rs2 = bitrange(ins, 24, 20)
+    # vs1 = self.register[rs1]
+    # vs2 = self.register[rs2]
+    # vpc = self.register[Register.PC]
+    # register_writeback = opcode in [Ops.JAL, Ops.JALR, Ops.AUIPC, Ops.LUI, Ops.OP, Ops.IMM, Ops.LOAD]
+    # new_pc = (opcode in [Ops.JAL, Ops.JALR]) or (opcode == Ops.BRANCH and self.condition(funct3, vs1, vs2)) 
 
 
     # -------------- EXECUTE -------------- 
@@ -175,27 +191,29 @@ class CPU:
       if DEBUG > 0: print(self.register.hexfmt(32), opcode, REGISTERS_NAME[rd], hex(imm_j))
       self.register[rd] = self.register[Register.PC] + 4  # Store the next instruction addr
       self.register[Register.PC] += imm_j # Perform a jump
-      return # HACK: REMOVE THIS
+      return True # HACK: REMOVE THIS
     elif opcode == Ops.JALR:
       if DEBUG > 0: print(self.register.hexfmt(32), opcode, REGISTERS_NAME[rd], REGISTERS_NAME[rs1], hex(imm_i))
       self.register[rd] = self.register[Register.PC] + 4  # Store the next instruction addr
       self.register[Register.PC] = self.register[rs1] + imm_i
-      return # HACK: REMOVE THIS
+      return True # HACK: REMOVE THIS
     elif opcode == Ops.BRANCH:
       if DEBUG > 0: print(self.register.hexfmt(32), opcode, funct3, REGISTERS_NAME[rs1], REGISTERS_NAME[rs2], hex(imm_b))
       if self.condition(funct3, self.register[rs1], self.register[rs2]): # Check condition
         self.register[Register.PC] += imm_b
-        return # HACK: REMOVE THIS
+        return True # HACK: REMOVE THIS
 
     elif opcode == Ops.IMM:
       if DEBUG > 0: print(self.register.hexfmt(32), opcode, funct3, REGISTERS_NAME[rd], REGISTERS_NAME[rs1], hex(imm_i))
-      self.alu(funct3, rd, self.register[rs1], imm_i, funct7)
+      self.register[rd] = self.alu(funct3, self.register[rs1], imm_i, funct7)
     elif opcode == Ops.AUIPC:
-      self.alu(funct3.ADD, rd, self.register[Register.PC], imm_u, funct7)
+      self.register[rd] = self.alu(funct3.ADD, self.register[Register.PC], imm_u, funct7)
       if DEBUG > 0: print(self.register.hexfmt(32), opcode, REGISTERS_NAME[rd], hex(imm_u))
+    elif opcode == Ops.LUI:
+      self.register[rd] = imm_u << 12
     elif opcode == Ops.OP:
       if DEBUG > 0: print(self.register.hexfmt(32), opcode, funct3, REGISTERS_NAME[rd], REGISTERS_NAME[rs1], REGISTERS_NAME[rs2])
-      self.alu(funct3, rd, self.register[rs1], self.register[rs2], funct7)
+      self.register[rd] = self.alu(funct3, self.register[rs1], self.register[rs2], funct7)
     
     elif opcode == Ops.LOAD:
       if DEBUG > 0: print(self.register.hexfmt(32), opcode, REGISTERS_NAME[rd], REGISTERS_NAME[rs1], hex(imm_i))
@@ -221,8 +239,15 @@ class CPU:
 
     elif opcode == Ops.SYSTEM:
       if funct3 == Funct3.ECALL:
-        if DEBUG > 0: print(self.register.hexfmt(32), opcode, funct3, REGISTERS_NAME[rd])
-        raise NotImplementedError
+        if DEBUG > 0: print(self.register.hexfmt(32), opcode, "ECALL", REGISTERS_NAME[rd], REGISTERS_NAME[rs1])
+        if self.register[3] > 1:
+          raise Exception("FAILURE IN TEST, PLZ CHECK")
+        elif self.register[3] == 1:
+          # hack for test exit
+          return False
+      else:
+        if DEBUG > 0: print(self.register.hexfmt(32), opcode, "SKIP")
+    elif opcode == Ops.MISC:
       if DEBUG > 0: print(self.register.hexfmt(32), opcode, "SKIP")
     else:
       if DEBUG > 0: print(self.register.hexfmt(32), opcode, REGISTERS_NAME[rd])
@@ -232,6 +257,7 @@ class CPU:
 
     # Next instruction
     self.register[Register.PC] += 4
+    return True
   
 
   def coredump(self, start_addr=MAGIC_START, l=16, filename=None):
@@ -246,6 +272,10 @@ class CPU:
         print(f"0x{i*4+MAGIC_START:08x}: {row}")
 
   def run(self):
-    while True:
+    for c in count():
     # for _ in range(5):
-      self.step()
+      print(c)
+      r = self.step()
+      if not r:
+        print(self.register)
+        break
