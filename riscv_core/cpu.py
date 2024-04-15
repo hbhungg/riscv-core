@@ -5,7 +5,7 @@ import os
 from typing import Optional
 from itertools import count
 
-from utils import REGISTERS_NAME
+from .utils import REGISTERS_NAME
 
 MAGIC_START = 0x80000000
 DEBUG = int(os.getenv("DEBUG", 0))
@@ -179,6 +179,7 @@ class CPU:
     # Read register
     rs1 = bitrange(ins, 19, 15)
     rs2 = bitrange(ins, 24, 20)
+
     # vs1 = self.register[rs1]
     # vs2 = self.register[rs2]
     # vpc = self.register[Register.PC]
@@ -211,6 +212,7 @@ class CPU:
       if DEBUG > 0: print(self.register.hexfmt(32), opcode, REGISTERS_NAME[rd], hex(imm_u))
     elif opcode == Ops.LUI:
       self.register[rd] = imm_u << 12
+      if DEBUG > 0: print(self.register.hexfmt(32), opcode, REGISTERS_NAME[rd], hex(imm_u))
     elif opcode == Ops.OP:
       if DEBUG > 0: print(self.register.hexfmt(32), opcode, funct3, REGISTERS_NAME[rd], REGISTERS_NAME[rs1], REGISTERS_NAME[rs2])
       self.register[rd] = self.alu(funct3, self.register[rs1], self.register[rs2], funct7)
@@ -241,9 +243,8 @@ class CPU:
       if funct3 == Funct3.ECALL:
         if DEBUG > 0: print(self.register.hexfmt(32), opcode, "ECALL", REGISTERS_NAME[rd], REGISTERS_NAME[rs1])
         if self.register[3] > 1:
-          raise Exception("FAILURE IN TEST, PLZ CHECK")
+          raise Exception("Fail")
         elif self.register[3] == 1:
-          # hack for test exit
           return False
       else:
         if DEBUG > 0: print(self.register.hexfmt(32), opcode, "SKIP")
@@ -263,18 +264,17 @@ class CPU:
   def coredump(self, start_addr=MAGIC_START, l=16, filename=None):
     start_addr -= MAGIC_START
     dump = [binascii.hexlify(self.memory[i:i+4][::-1]) for i in range(0,len(self.memory),4)]
-    if filename is not None:
-      with open(f"test-cache/{filename}") as f: f.write(b'\n'.join(dump))
-    else:
+    # if filename is not None:
+    #   with open(f"test-cache/{filename}") as f: f.write(b'\n'.join(dump))
+    # else:
       # Print core dump
-      for i in range(start_addr//4, start_addr//4+l, 4):
-        row = ' '.join(f"0x{chunk.decode('utf-8')}" for chunk in dump[i: i+4])
-        print(f"0x{i*4+MAGIC_START:08x}: {row}")
+    for i in range(start_addr//4, start_addr//4+l, 4):
+      row = ' '.join(f"0x{chunk.decode('utf-8')}" for chunk in dump[i: i+4])
+      print(f"0x{i*4+MAGIC_START:08x}: {row}")
 
   def run(self):
     for c in count():
     # for _ in range(5):
-      print(c)
       r = self.step()
       if not r:
         print(self.register)
