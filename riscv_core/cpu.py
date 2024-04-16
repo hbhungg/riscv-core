@@ -4,6 +4,7 @@ import struct
 import os
 from typing import Optional
 from itertools import count
+from elftools.elf.elffile import ELFFile
 
 from .utils import REGISTERS_NAME
 
@@ -272,9 +273,22 @@ class CPU:
       row = ' '.join(f"0x{chunk.decode('utf-8')}" for chunk in dump[i: i+4])
       print(f"0x{i*4+MAGIC_START:08x}: {row}")
 
-  def run(self):
-    for c in count():
+  def start(self):
+    for _ in count():
       r = self.step()
       if not r:
         print(self.register)
         break
+
+  def exec(self, fn: str):
+    # Read .dump file
+    with open(fn, "rb") as f:
+      e = ELFFile(f)
+      for s in e.iter_segments():
+        try:
+          self.load(s.header.p_paddr, s.data())
+        except InvalidMemory:
+          pass
+    self.start()
+
+
