@@ -104,7 +104,7 @@ class CPU:
   def load(self, addr, data):
     addr -= MAGIC_START
     if addr < 0 or addr >= len(self.memory): raise InvalidMemory(f"Address {addr:08x} is out of bound for {len(self.memory):08x}")
-    self.memory = self.memory[:addr] + data + self.memory[addr+len(data):]
+    self.memory[addr:addr+len(data)] = data
   
   def read32(self, addr):
     addr -= MAGIC_START
@@ -274,7 +274,6 @@ class CPU:
 
   def run(self):
     for c in count():
-    # for _ in range(5):
       r = self.step()
       if not r:
         print(self.register)
