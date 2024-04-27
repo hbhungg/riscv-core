@@ -221,15 +221,16 @@ class CPU:
     elif opcode == Ops.LOAD:
       if DEBUG > 0: print(self.register.hexfmt(32), opcode, REGISTERS_NAME[rd], REGISTERS_NAME[rs1], hex(imm_i))
       if funct3 == Funct3.LB:
-        raise NotImplementedError
+        self.register[rd] = sign_ext(self.read32(rs1)&0xFF, 8)
       elif funct3 == Funct3.LH:
-        raise NotImplementedError
+        self.register[rd] = sign_ext(self.read32(rs1)&0xFFFF, 16)
       elif funct3 == Funct3.LW:
-        raise NotImplementedError
+        self.register[rd] = self.read32(rs1)
+      # Load unsign
       elif funct3 == Funct3.LBU:
-        raise NotImplementedError
+        self.register[rd] = self.read32(rs1)&0xFF
       elif funct3 == Funct3.LHU:
-        raise NotImplementedError
+        self.register[rd] = self.read32(rs1)&0xFF
     elif opcode == Ops.STORE:
       if DEBUG > 0: print(self.register.hexfmt(32), opcode, funct3, REGISTERS_NAME[rs1], REGISTERS_NAME[rs2], hex(imm_s))
       if funct3 == Funct3.SB:
