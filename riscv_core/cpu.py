@@ -233,9 +233,9 @@ class CPU:
     elif opcode == Ops.STORE:
       if DEBUG > 0: print(self.register.hexfmt(32), opcode, funct3, REGISTERS_NAME[rs1], REGISTERS_NAME[rs2], hex(imm_s))
       if funct3 == Funct3.SB:
-        raise NotImplementedError
+        self.load(vs1 + imm_s, struct.pack("I", vs2&0xFF))
       elif funct3 == Funct3.SH:
-        raise NotImplementedError
+        self.load(vs1 + imm_s, struct.pack("I", vs2&0xFFFF))
       elif funct3 == Funct3.SW:
         self.load(vs1 + imm_s, struct.pack("I", vs2))
       if DEBUG > 2: self.coredump(vs1+imm_s-4, l=32)
