@@ -8,6 +8,12 @@ RISC-V test suite: https://github.com/riscv-software-src/riscv-tests
 RISC-V instruction decode
 ![alt text](docs/riscv_instruction_decode.jpg)
 
+# Run test
+```
+export PYTHONPATH=$(pwd)
+pytest
+```
+
 ## TODO
 - Write a core in Python
 - Port over to Verilog
