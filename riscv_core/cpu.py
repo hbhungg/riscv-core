@@ -220,7 +220,7 @@ class CPU:
     
     elif opcode == Ops.LOAD:
       if DEBUG > 0: print(self.register.hexfmt(32), opcode, REGISTERS_NAME[rd], REGISTERS_NAME[rs1], hex(imm_i))
-      fetch_addr = self.alu(funct3.ADD, vs1, imm_s, 0)
+      fetch_addr = self.alu(funct3.ADD, vs1, imm_i, 0)
       if funct3 == Funct3.LB:
         self.register[rd] = sign_ext(self.read32(fetch_addr)&0xFF, 8)
       elif funct3 == Funct3.LH:
