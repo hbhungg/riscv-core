@@ -89,7 +89,7 @@ class Register:
   def __setitem__(self, key, val):
     # Write to reg 0 will have no effect since it is hardwire to 0
     if key == 0: return
-    self.regs[key] = val & 0xffffffff
+    self.regs[key] = val & 0xFFFFFFFF
   def hexfmt(self, key): return f"{self.regs[key]:08x}" if self.regs[key] != 0 else " "*7 + "0" # Format hex 08x
   def __repr__(self):
     return "---- Register state ----\n" + "\n".join([" ".join([f"{REGISTERS_NAME[4*i+j]}: {self.hexfmt(4*i+j)}".rjust(16) for j in range(4)]) for i in range(8)]) + f"\nPC: {self.hexfmt(32)}\n"
@@ -133,18 +133,18 @@ class CPU:
     Arithmetic Logic Unit
     """
     if funct3 == Funct3.ADD:
-      if funct7 == 0x0100000:
+      if funct7 == 0x20:
         return x - y
       else:
         return x + y
-    # (y & 0x1f) is because we use the shamt (lower 5 bits) part of imm
+    # (y & 0x1F) is because we use the shamt (lower 5 bits) part of imm
     elif funct3 == Funct3.SLLI:
-      return x << (y & 0x1f)
+      return x << (y & 0x1F)
     elif funct3 == Funct3.SRL:
-      if funct7 == 0x0100000:
+      if funct7 == 0x20:
         raise NotImplementedError
       else:
-        return x >> (y & 0x1f)
+        return x >> (y & 0x1F)
     elif funct3 == Funct3.OR:
       return x | y
     elif funct3 == Funct3.AND:
