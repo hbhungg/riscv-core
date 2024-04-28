@@ -212,7 +212,7 @@ class CPU:
       self.register[rd] = self.alu(funct3.ADD, vpc, imm_u, funct7)
       if DEBUG > 0: print(self.register.hexfmt(32), opcode, REGISTERS_NAME[rd], hex(imm_u))
     elif opcode == Ops.LUI:
-      self.register[rd] = self.alu(funct3.ADD, 0, imm_u, funct7)
+      self.register[rd] = self.alu(funct3.ADD, 0, imm_u, 0)
       if DEBUG > 0: print(self.register.hexfmt(32), opcode, REGISTERS_NAME[rd], hex(imm_u))
     elif opcode == Ops.OP:
       if DEBUG > 0: print(self.register.hexfmt(32), opcode, funct3, REGISTERS_NAME[rd], REGISTERS_NAME[rs1], REGISTERS_NAME[rs2])
