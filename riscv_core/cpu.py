@@ -141,10 +141,14 @@ class CPU:
     elif funct3 == Funct3.SLLI:
       return x << (y & 0x1F)
     elif funct3 == Funct3.SRL:
+      out = x >> (y & 0x1F)
       if funct7 == 0x20:
-        raise NotImplementedError
+        sign_bit = x >> 31
+        # NOTE: Do we need the (& 0xFFFFFFFF) at the end to truncate to 32 bit?
+        fill_shift = (((0xFFFFFFFF * sign_bit) << (32 - (y & 0x1F))) & 0xFFFFFFFF)
+        return out | fill_shift
       else:
-        return x >> (y & 0x1F)
+        return out
     elif funct3 == Funct3.OR:
       return x | y
     elif funct3 == Funct3.AND:
