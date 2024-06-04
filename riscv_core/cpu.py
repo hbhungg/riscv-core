@@ -211,7 +211,7 @@ class CPU:
 
     elif opcode == Ops.IMM:
       if DEBUG > 0: print(self.register.hexfmt(32), opcode, funct3, REGISTERS_NAME[rd], REGISTERS_NAME[rs1], hex(imm_i))
-      self.register[rd] = self.alu(funct3, vs1, imm_i, funct7)
+      self.register[rd] = self.alu(funct3, vs1, imm_i, 0)
     elif opcode == Ops.AUIPC:
       self.register[rd] = self.alu(funct3.ADD, vpc, imm_u, funct7)
       if DEBUG > 0: print(self.register.hexfmt(32), opcode, REGISTERS_NAME[rd], hex(imm_u))
@@ -235,7 +235,7 @@ class CPU:
       elif funct3 == Funct3.LBU:
         self.register[rd] = self.read32(addr)&0xFF
       elif funct3 == Funct3.LHU:
-        self.register[rd] = self.read32(addr)&0xFF
+        self.register[rd] = self.read32(addr)&0xFFFF
     elif opcode == Ops.STORE:
       if DEBUG > 0: print(self.register.hexfmt(32), opcode, funct3, REGISTERS_NAME[rs1], REGISTERS_NAME[rs2], hex(imm_s))
       addr = self.alu(funct3.ADD, vs1, imm_s, 0)
