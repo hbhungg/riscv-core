@@ -2,7 +2,6 @@ from enum import Enum
 import binascii
 import struct
 import os
-from typing import Optional
 from itertools import count
 from elftools.elf.elffile import ELFFile
 
@@ -128,12 +127,12 @@ class CPU:
     else:
       raise NotImplementedError
 
-  def alu(self, funct3:Funct3, x:int, y:int, funct7:int):
+  def alu(self, funct3:Funct3, x:int, y:int, alt:bool):
     """
     Arithmetic Logic Unit
     """
     if funct3 == Funct3.ADD:
-      if funct7 == 0x20:
+      if alt:
         return x - y
       else:
         return x + y
@@ -142,9 +141,8 @@ class CPU:
       return x << (y & 0x1F)
     elif funct3 == Funct3.SRL:
       out = x >> (y & 0x1F)
-      if funct7 == 0x20:
+      if alt:
         sign_bit = x >> 31
-        # NOTE: Do we need the (& 0xFFFFFFFF) at the end to truncate to 32 bit?
         fill_shift = (((0xFFFFFFFF * sign_bit) << (32 - (y & 0x1F))) & 0xFFFFFFFF)
         return out | fill_shift
       else:
@@ -188,8 +186,10 @@ class CPU:
     vs1 = self.register[rs1]
     vs2 = self.register[rs2]
     vpc = self.register[Register.PC]
-    # register_writeback = opcode in [Ops.JAL, Ops.JALR, Ops.AUIPC, Ops.LUI, Ops.OP, Ops.IMM, Ops.LOAD]
-    # new_pc = (opcode in [Ops.JAL, Ops.JALR]) or (opcode == Ops.BRANCH and self.condition(funct3, vs1, vs2)) 
+
+    # Alternative mode for OP and IMM
+    # For IMM, it is only SRAI
+    alt = (funct7 == 0b0100000) and (opcode == Ops.OP or (opcode == Ops.IMM and funct3 == Funct3.SRAI))
 
 
     # -------------- EXECUTE -------------- 
@@ -210,21 +210,21 @@ class CPU:
         return True # HACK: REMOVE THIS
 
     elif opcode == Ops.IMM:
-      if DEBUG > 0: print(self.register.hexfmt(32), opcode, funct3, REGISTERS_NAME[rd], REGISTERS_NAME[rs1], hex(imm_i))
-      self.register[rd] = self.alu(funct3, vs1, imm_i, 0)
+      if DEBUG > 0: print(self.register.hexfmt(32), opcode, funct3, REGISTERS_NAME[rd], REGISTERS_NAME[rs1], hex(imm_i), funct3, funct7)
+      self.register[rd] = self.alu(funct3, vs1, imm_i, alt)
     elif opcode == Ops.AUIPC:
-      self.register[rd] = self.alu(funct3.ADD, vpc, imm_u, funct7)
+      self.register[rd] = self.alu(funct3.ADD, vpc, imm_u, alt)
       if DEBUG > 0: print(self.register.hexfmt(32), opcode, REGISTERS_NAME[rd], hex(imm_u))
     elif opcode == Ops.LUI:
-      self.register[rd] = self.alu(funct3.ADD, 0, imm_u, 0)
+      self.register[rd] = self.alu(funct3.ADD, 0, imm_u, alt)
       if DEBUG > 0: print(self.register.hexfmt(32), opcode, REGISTERS_NAME[rd], hex(imm_u))
     elif opcode == Ops.OP:
       if DEBUG > 0: print(self.register.hexfmt(32), opcode, funct3, REGISTERS_NAME[rd], REGISTERS_NAME[rs1], REGISTERS_NAME[rs2])
-      self.register[rd] = self.alu(funct3, vs1, vs2, funct7)
+      self.register[rd] = self.alu(funct3, vs1, vs2, alt)
     
     elif opcode == Ops.LOAD:
       if DEBUG > 0: print(self.register.hexfmt(32), opcode, REGISTERS_NAME[rd], REGISTERS_NAME[rs1], hex(imm_i))
-      addr = self.alu(funct3.ADD, vs1, imm_i, 0)
+      addr = self.alu(funct3.ADD, vs1, imm_i, alt)
       if funct3 == Funct3.LB:
         self.register[rd] = sign_ext(self.read32(addr)&0xFF, 8)
       elif funct3 == Funct3.LH:
@@ -238,7 +238,7 @@ class CPU:
         self.register[rd] = self.read32(addr)&0xFFFF
     elif opcode == Ops.STORE:
       if DEBUG > 0: print(self.register.hexfmt(32), opcode, funct3, REGISTERS_NAME[rs1], REGISTERS_NAME[rs2], hex(imm_s))
-      addr = self.alu(funct3.ADD, vs1, imm_s, 0)
+      addr = self.alu(funct3.ADD, vs1, imm_s, alt)
       if funct3 == Funct3.SB:
         self.load(addr, struct.pack("B", vs2&0xFF))
       elif funct3 == Funct3.SH:
@@ -284,7 +284,6 @@ class CPU:
     for _ in count():
       r = self.step()
       if not r:
-        print(self.register)
         break
 
   def exec(self, fn: str):
