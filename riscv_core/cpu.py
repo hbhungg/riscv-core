@@ -83,7 +83,7 @@ class InvalidMemory(Exception):
 
 class Register:
   PC = 32
-  def __init__(self, *args, **kwargs): self.regs = [0]*33
+  def __init__(self): self.regs = [0]*33
   def __getitem__(self, key): return self.regs[key]
   def __setitem__(self, key, val):
     # Write to reg 0 will have no effect since it is hardwire to 0
