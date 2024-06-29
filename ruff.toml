@@ -1,0 +1,4 @@
+line-length = 150
+indent-width = 2
+
+ignore = ["E701", "E741"]
