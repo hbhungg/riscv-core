@@ -98,7 +98,7 @@ class CPU:
   def __init__(self, register=Register()):
     self.register = register
     self.register[Register.PC] = MAGIC_START
-    # 16KB at 0x80000000
+    # 1MB at 0x80000000
     self.memory = bytearray(b'\x00' * 0x40000)
   
   def load(self, addr, data):
