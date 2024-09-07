@@ -1,3 +1,5 @@
+use bitflags::bitflags;
+
 // 1MB at 0x80000000
 const MEMSIZE: usize = 0x40000;
 // RISC-V have 32 register
@@ -13,6 +15,80 @@ pub struct CPU {
 enum DumpStyle {
   Hex,
   Bin,
+}
+
+bitflags! {
+  struct Ops: u32 {
+    // Load store
+    const LUI = 0b0110111;
+    const LOAD = 0b0000011;
+    const STORE = 0b0100011;
+    const AUIPC = 0b0010111;
+
+    // Branch
+    const JAL = 0b1101111;
+    const JALR = 0b1100111;
+    const BRANCH = 0b1100011;
+    const OP = 0b0110011;
+    const IMM = 0b0010011;
+
+    // IDK
+    const MISC = 0b0001111;
+    const SYSTEM = 0b1110011;
+  }
+
+  struct Funct3: u8 {
+    // OP and IMM
+    const ADD = 0b000;
+    const ADDI = 0b000;
+    const SUB = 0b000;
+    const SLLI = 0b001;
+    const SLT = 0b010;
+    const SLTI = 0b010;
+    const SLTU = 0b011;
+    const SLTIU = 0b011;
+    const XOR = 0b100;
+    const XORI = 0b100;
+    const SRL = 0b101;
+    const SRLI = 0b101;
+    const SRA = 0b101;
+    const SRAI = 0b101;
+    const OR = 0b110;
+    const ORI = 0b110;
+    const AND = 0b111;
+    const ANDI = 0b111;
+
+    // BRANCH
+    const BEQ = 0b000;
+    const BNE = 0b001;
+    const BLT = 0b100;
+    const BGE = 0b101;
+    const BLTU = 0b110;
+    const BGEU = 0b111;
+
+    // LOAD and STORE
+    const LB = 0b000;
+    const SB = 0b000;
+    const LH = 0b001;
+    const SH = 0b001;
+    const LW = 0b010;
+    const SW = 0b010;
+    const LBU = 0b100;
+    const LHU = 0b101;
+
+    // MISC
+    const FENCE = 0b000;
+    const FENCEI = 0b001;
+
+    // SYSTEM
+    const ECALL = 0b000;
+    const CSRRW = 0b001;
+    const CSRRS = 0b010;
+    const CSRRC = 0b011;
+    const CSRRWI = 0b101;
+    const CSRRSI = 0b110;
+    const CSRRCI = 0b111;
+  }
 }
 
 impl CPU {
