@@ -1,7 +1,7 @@
 # riscv-core
 A small RISC-V core in ~~Python~~ Rust (and Verilog, soon).
 
-**UPDATE: The Python version is done, I am just porting to over to Rust first.**
+**UPDATE: The Python version is done, I am just porting over to Rust.**
 
 # Prerequisite
 RISC-V test suite: https://github.com/riscv-software-src/riscv-tests
