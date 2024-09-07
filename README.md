@@ -7,9 +7,13 @@ A small RISC-V core in ~~Python~~ Rust (and Verilog, soon).
 RISC-V test suite: https://github.com/riscv-software-src/riscv-tests
 
 # Notes
-RISC-V instruction format
+Some images and notes from the The RISC-V Instruction Set Manual causes its a pain everytime I tried to refer back after to it.
 
-![alt text](docs/riscv_instruction_decode.jpg)
+## RISC-V 32I Base instruction format
+32I Decode
+![alt text](docs/riscv_instruction_decode.jpg "32I decode scheme")
+
+![alt text](docs/riscv_instruction_set_listing.jpg "32I binary instruction set")
 
 # Run test
 ```

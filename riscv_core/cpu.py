@@ -17,7 +17,7 @@ def bitrange(ins:int, s:int, e:int) -> int:
   return (ins >> e) & ((1 << (s - e + 1)) - 1)
 
 def sign_ext(x:int, l:int):
-  # Extend x to l length while preserving its sign
+  # Extend x to 32 bit while preserving its sign by checking the `l`-th bit
   # https://en.wikipedia.org/wiki/Sign_extension
   return -((1 << l) - x) if x >> (l-1) == 1 else x
 

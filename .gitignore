@@ -2,3 +2,4 @@ riscv-tests/
 venv/
 __pycache__/
 *pdf
+.DS_Store
