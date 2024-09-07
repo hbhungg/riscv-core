@@ -1,6 +1,6 @@
 // 1MB at 0x80000000
 const MEMSIZE: usize = 0x40000;
-const REGSIZE: usize = 32;
+const REGSIZE: usize = 33;
 pub const MAGIC_START: u32 = 0x80000000;
 
 pub struct CPU {
@@ -16,9 +16,11 @@ pub enum DumpStyle {
 impl CPU {
   // Init all 0s
   pub fn new() -> Self {
+    let mut register = [0; REGSIZE];
+    register[32] = MAGIC_START;
     Self {
       memory: [0; MEMSIZE],
-      register: [0; REGSIZE],
+      register: register
     }
   }
 
@@ -53,7 +55,12 @@ impl CPU {
   }
 
   /// Main CPU loop
-  pub fn step(&self) {
-    let ins: u32 = self.read32(self.register[32]);
+  pub fn step(mut self) {
+    loop {
+      let ins: u32 = self.read32(self.register[32]);
+      println!("{:08x}: {:08x}", self.register[32], ins);
+      self.register[32] = self.register[32] + 4;
+      break;
+    }
   }
 }

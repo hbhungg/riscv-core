@@ -21,6 +21,7 @@ fn read_elf(path: &PathBuf) {
     }
   }
   cpu.coredump(400, cpu::DumpStyle::Hex);
+  cpu.step();
 }
 
 fn main() {
