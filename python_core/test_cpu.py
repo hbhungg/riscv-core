@@ -1,7 +1,7 @@
 import glob
 import pytest
 
-from riscv_core.cpu import CPU
+from python_core.cpu import CPU
 
 riscv_test_path = "riscv-tests/isa"
 rv32ui_p = glob.glob(f"{riscv_test_path}/rv32ui-p-*[!.dump]")
