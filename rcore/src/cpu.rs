@@ -91,6 +91,42 @@ bitflags! {
   }
 }
 
+/// Slice ins[s, e], inclusive
+fn bitrange(ins: u32, s: usize, e: usize) -> u32 {
+  (ins >> e) & ((1 << (s - e + 1)) - 1)
+}
+
+/// Extend x to l length while preserving its sign
+/// https://en.wikipedia.org/wiki/Sign_extension
+fn sign_ext(x: u32, l: usize) -> u32 {
+  let bit_mask = x >> (l - 1);
+  println!("bitmask: {:b}", bit_mask);
+
+  if bit_mask == 1  {
+    !((1 << l) - x)
+  } else {
+    x
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  #[test]
+  fn test_bitrange() {
+    assert_eq!(bitrange(0b101010, 4, 0), 0b1010);
+  }
+
+  #[test]
+  fn test_sign_ext() {
+    let ins: u32 = 15;
+    println!("{:b}", ins);
+    let result = sign_ext(ins, 4);
+    println!("{:b}", result);
+    assert_eq!(result, 1);
+  }
+}
+
 impl CPU {
   // Init all 0s
   pub fn new() -> Self {
@@ -163,6 +199,8 @@ impl CPU {
     loop {
       let vpc = self.getreg(PC);
       let ins: u32 = self.read32(vpc);
+      let opcode = bitrange(ins, 6, 0);
+
       println!("{:08x}: {:08x}", vpc, ins);
       self.setreg(PC, vpc + 4);
       break;
