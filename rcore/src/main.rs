@@ -27,6 +27,18 @@ impl CPU {
     // self.print_memory_chunk(start, end);
   }
 
+  fn read32(&self, addr: u64) -> [u8; 4] {
+    let start = usize::try_from(addr - CPU::MAGIC_START).unwrap();
+    self.memory[start..start+4].try_into().expect("should be size 4")
+  }
+
+  fn reg_dump(&self) {
+    println!("Registers: {:?}", self.register)
+  }
+  fn mem_dump(&self) {
+    println!("{:?}", self.memory)
+  }
+
   fn print_memory_chunk(&self, start: usize, end: usize) {
     // Ensure the slice bounds are within the valid range
     if start <= end && end <= self.memory.len() {
@@ -34,15 +46,6 @@ impl CPU {
     } else {
       eprintln!("Error: Slice bounds are out of range.");
     }
-  }
-
-  fn read32() {}
-
-  fn reg_dump(&self) {
-    println!("Registers: {:?}", self.register)
-  }
-  fn mem_dump(&self) {
-    println!("{:?}", self.memory)
   }
 }
 
