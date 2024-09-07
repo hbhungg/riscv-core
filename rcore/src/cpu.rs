@@ -96,14 +96,11 @@ fn bitrange(ins: u32, s: usize, e: usize) -> u32 {
   (ins >> e) & ((1 << (s - e + 1)) - 1)
 }
 
-/// Extend x to l length while preserving its sign
+/// Extend x to 32 bit while preserving its sign by checking the `l`-th bit
 /// https://en.wikipedia.org/wiki/Sign_extension
 fn sign_ext(x: u32, l: usize) -> u32 {
-  let bit_mask = x >> (l - 1);
-  println!("bitmask: {:b}", bit_mask);
-
-  if bit_mask == 1  {
-    !((1 << l) - x)
+  if let 1 = x >> (l-1) {
+    x | !((1u32 << l) - 1)
   } else {
     x
   }
@@ -118,12 +115,17 @@ mod tests {
   }
 
   #[test]
-  fn test_sign_ext() {
-    let ins: u32 = 15;
-    println!("{:b}", ins);
-    let result = sign_ext(ins, 4);
+  fn test_sign_ext_neg() {
+    let result = sign_ext(0b10101010, 8);
     println!("{:b}", result);
-    assert_eq!(result, 1);
+    assert_eq!(result, 0b11111111111111111111111110101010);
+  }
+
+  #[test]
+  fn test_sign_ext_pos() {
+    let result = sign_ext(0b10101010, 9);
+    println!("{:b}", result);
+    assert_eq!(result, 0b00000000000000000000000010101010);
   }
 }
 
@@ -199,9 +201,30 @@ impl CPU {
     loop {
       let vpc = self.getreg(PC);
       let ins: u32 = self.read32(vpc);
+
       let opcode = bitrange(ins, 6, 0);
+      let imm_i = sign_ext(bitrange(ins, 31, 20), 12);
+      let imm_s = sign_ext((bitrange(ins, 32, 25) << 5) | bitrange(ins, 11, 7), 12);
+      let imm_b = sign_ext((bitrange(ins, 32, 31) << 12) | (bitrange(ins, 30, 25) << 5) | (bitrange(ins, 11, 8) << 1) | (bitrange(ins, 8, 7) << 11), 13);
+      let imm_u = sign_ext(bitrange(ins, 31, 12) << 12, 32);
+      let imm_j = sign_ext((bitrange(ins, 32, 31) << 20) | (bitrange(ins, 19, 12) << 12) | (bitrange(ins, 21, 20) << 11) | (bitrange(ins, 30, 21) << 1), 21);
+
+      let funct3 = bitrange(ins, 14, 12);
+      let funct7 = bitrange(ins, 31, 25);
+      // Write back register
+      let rd = bitrange(ins, 11, 7);
+      // Read register
+      let rs1 = bitrange(ins, 19, 15);
+      let rs2 = bitrange(ins, 24, 20);
+
 
       println!("{:08x}: {:08x}", vpc, ins);
+      println!("imm_i: {:032b}", imm_i);
+      println!("imm_s: {:032b}", imm_s);
+      println!("imm_b: {:032b}", imm_b);
+      println!("imm_u: {:032b}", imm_u);
+      println!("imm_j: {:032b}", imm_j);
+
       self.setreg(PC, vpc + 4);
       break;
     }
