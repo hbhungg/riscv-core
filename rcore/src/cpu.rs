@@ -36,13 +36,17 @@ impl CPU {
   pub fn coredump(&self, size: usize, style: DumpStyle) {
     let chunk_size: usize = 16;
     for (idx, chunk) in self.memory[0..size].chunks(chunk_size).enumerate() {
-      let row = chunk.iter().enumerate().fold(format!("{:08x}: ", idx * chunk_size), |acc, (_, &byte)| {
-        let formatted_byte = match style {
-          DumpStyle::Hex => format!("{:02x} ", byte),
-          DumpStyle::Bin => format!("{:08b} ", byte),
-        };
-        acc + &formatted_byte
-      });
+      let row = chunk
+        .chunks(4)
+        .enumerate()
+        .fold(format!("0x{:08x}: ", MAGIC_START + (idx * chunk_size) as u32), |acc, (_, byte)| {
+          let x = u32::from_le_bytes(byte.try_into().unwrap());
+          let formatted_byte = match style {
+            DumpStyle::Hex => format!("0x{:08x} ", x),
+            DumpStyle::Bin => format!("0b{:032b} ", x),
+          };
+          acc + &formatted_byte
+        });
       println!("{}", row);
     }
   }
