@@ -20,7 +20,6 @@ fn read_elf(path: &PathBuf) {
       cpu.load(offset, data);
     }
   }
-  cpu.coredump(400, cpu::DumpStyle::Hex);
   cpu.step();
 }
 
