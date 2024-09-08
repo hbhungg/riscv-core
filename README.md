@@ -7,8 +7,8 @@ A small RISC-V core in ~~Python~~ Rust (and Verilog, soon).
 RISC-V test suite: https://github.com/riscv-software-src/riscv-tests. It has `ELF` and `.dump` files. Use the `ELF` for the CPU and `.dump` for debug.
 
 Not sure if this is correct or not, cause I did not see it document anywhere, but test outcome depends on the ECALL:
-- ECALL with register[3] == 1 means then pass
-- ECALL with register[3] > 1 means then fail
+- ECALL with register[3] == 1 means pass
+- ECALL with register[3] > 1 means fail
 
 At least for the bulk of `rv32ui-p` tests.
 
