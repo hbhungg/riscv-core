@@ -217,6 +217,9 @@ impl CPU {
       let rs1 = bitrange(ins, 19, 15);
       let rs2 = bitrange(ins, 24, 20);
 
+      let vs1 = self.getreg(usize::try_from(rs1).unwrap());
+      let vs2 = self.getreg(usize::try_from(rs2).unwrap());
+
 
       println!("{:08x}: {:08x}", vpc, ins);
       println!("imm_i: {:032b}", imm_i);
