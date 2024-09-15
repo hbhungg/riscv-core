@@ -198,17 +198,17 @@ class CPU:
     if opcode == Ops.JAL:
       if DEBUG > 0: print(self.register.hexfmt(32), opcode, REGISTERS_NAME[rd], hex(imm_j))
       self.register[rd] = self.alu(funct3.ADD, 4, vpc, 0)  # Store the next instruction addr
-      self.register[Register.PC] = self.alu(funct3.ADD, vpc, imm_j, 0) # Perform a jump
+      self.register[Register.PC] = self.alu(funct3.ADD, vpc, imm_j, alt) # Perform a jump
       return True # HACK: REMOVE THIS
     elif opcode == Ops.JALR:
       if DEBUG > 0: print(self.register.hexfmt(32), opcode, REGISTERS_NAME[rd], REGISTERS_NAME[rs1], hex(imm_i))
       self.register[rd] = self.alu(funct3.ADD, 4, vpc, 0)  # Store the next instruction addr
-      self.register[Register.PC] = self.alu(funct3.ADD, vs1, imm_i, 0)
+      self.register[Register.PC] = self.alu(funct3.ADD, vs1, imm_i, alt)
       return True # HACK: REMOVE THIS
     elif opcode == Ops.BRANCH:
       if DEBUG > 0: print(self.register.hexfmt(32), opcode, funct3, REGISTERS_NAME[rs1], REGISTERS_NAME[rs2], hex(imm_b))
       if self.condition(funct3, vs1, vs2): # Check condition
-        self.register[Register.PC] = self.alu(funct3.ADD, vpc, imm_b, 0)
+        self.register[Register.PC] = self.alu(funct3.ADD, vpc, imm_b, alt)
         return True # HACK: REMOVE THIS
 
     elif opcode == Ops.IMM:
