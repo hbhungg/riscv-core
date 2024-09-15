@@ -191,33 +191,35 @@ class CPU:
     # For IMM, it is only SRAI
     alt = (funct7 == 0b0100000) and (opcode == Ops.OP or (opcode == Ops.IMM and funct3 == Funct3.SRAI))
 
+    # jmp = opcode in (Ops.JAL, Ops.JALR, Ops.BRANCH)
+
 
     # -------------- EXECUTE -------------- 
     if opcode == Ops.JAL:
       if DEBUG > 0: print(self.register.hexfmt(32), opcode, REGISTERS_NAME[rd], hex(imm_j))
-      self.register[rd] = vpc + 4  # Store the next instruction addr
-      self.register[Register.PC] += imm_j # Perform a jump
+      self.register[rd] = self.alu(funct3.ADD, 4, vpc, 0)  # Store the next instruction addr
+      self.register[Register.PC] = self.alu(funct3.ADD, vpc, imm_j, 0) # Perform a jump
       return True # HACK: REMOVE THIS
     elif opcode == Ops.JALR:
       if DEBUG > 0: print(self.register.hexfmt(32), opcode, REGISTERS_NAME[rd], REGISTERS_NAME[rs1], hex(imm_i))
-      self.register[rd] = vpc + 4  # Store the next instruction addr
-      self.register[Register.PC] = vs1 + imm_i
+      self.register[rd] = self.alu(funct3.ADD, 4, vpc, 0)  # Store the next instruction addr
+      self.register[Register.PC] = self.alu(funct3.ADD, vs1, imm_i, 0)
       return True # HACK: REMOVE THIS
     elif opcode == Ops.BRANCH:
       if DEBUG > 0: print(self.register.hexfmt(32), opcode, funct3, REGISTERS_NAME[rs1], REGISTERS_NAME[rs2], hex(imm_b))
       if self.condition(funct3, vs1, vs2): # Check condition
-        self.register[Register.PC] += imm_b
+        self.register[Register.PC] = self.alu(funct3.ADD, vpc, imm_b, 0)
         return True # HACK: REMOVE THIS
 
     elif opcode == Ops.IMM:
       if DEBUG > 0: print(self.register.hexfmt(32), opcode, funct3, REGISTERS_NAME[rd], REGISTERS_NAME[rs1], hex(imm_i), funct3, funct7)
       self.register[rd] = self.alu(funct3, vs1, imm_i, alt)
     elif opcode == Ops.AUIPC:
+      if DEBUG > 0: print(self.register.hexfmt(32), opcode, REGISTERS_NAME[rd], hex(imm_u))
       self.register[rd] = self.alu(funct3.ADD, vpc, imm_u, alt)
-      if DEBUG > 0: print(self.register.hexfmt(32), opcode, REGISTERS_NAME[rd], hex(imm_u))
     elif opcode == Ops.LUI:
-      self.register[rd] = self.alu(funct3.ADD, 0, imm_u, alt)
       if DEBUG > 0: print(self.register.hexfmt(32), opcode, REGISTERS_NAME[rd], hex(imm_u))
+      self.register[rd] = self.alu(funct3.ADD, 0, imm_u, alt)
     elif opcode == Ops.OP:
       if DEBUG > 0: print(self.register.hexfmt(32), opcode, funct3, REGISTERS_NAME[rd], REGISTERS_NAME[rs1], REGISTERS_NAME[rs2])
       self.register[rd] = self.alu(funct3, vs1, vs2, alt)
@@ -236,6 +238,7 @@ class CPU:
         self.register[rd] = self.read32(addr)&0xFF
       elif funct3 == Funct3.LHU:
         self.register[rd] = self.read32(addr)&0xFFFF
+
     elif opcode == Ops.STORE:
       if DEBUG > 0: print(self.register.hexfmt(32), opcode, funct3, REGISTERS_NAME[rs1], REGISTERS_NAME[rs2], hex(imm_s))
       addr = self.alu(funct3.ADD, vs1, imm_s, alt)

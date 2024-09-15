@@ -3,7 +3,7 @@ import pytest
 
 from python_core.cpu import CPU
 
-riscv_test_path = "riscv-tests/isa"
+riscv_test_path = "../riscv-tests/isa"
 rv32ui_p = glob.glob(f"{riscv_test_path}/rv32ui-p-*[!.dump]")
 
 @pytest.fixture
