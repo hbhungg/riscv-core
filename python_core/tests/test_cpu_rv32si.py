@@ -1,9 +1,7 @@
 import pytest
-from tests.conftest import test_files
+from tests.conftest import rv32si_files
 
-files = test_files("rv32si-p-*")
 
-@pytest.mark.parametrize("fn", files) 
+@pytest.mark.parametrize("fn", rv32si_files)
 def test_rv32si(fn, cpu):
-  cpu.exec(fn)
-  assert True
+    cpu.exec(fn)

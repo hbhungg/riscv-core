@@ -1,9 +1,7 @@
 import pytest
-from tests.conftest import test_files
+from tests.conftest import rv32ui_files
 
-files = test_files("rv32ui-p-*")
 
-@pytest.mark.parametrize("fn", files) 
+@pytest.mark.parametrize("fn", rv32ui_files)
 def test_rv32ui(fn, cpu):
-  cpu.exec(fn)
-  assert True
+    cpu.exec(fn)

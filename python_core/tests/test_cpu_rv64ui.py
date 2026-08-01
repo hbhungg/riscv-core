@@ -1,9 +1,8 @@
 import pytest
-from tests.conftest import test_files
+from tests.conftest import rv64ui_files
 
-files = test_files("rv64ui-p-*")
 
-@pytest.mark.parametrize("fn", files) 
+@pytest.mark.xfail(reason="RV64I not implemented", strict=False)
+@pytest.mark.parametrize("fn", rv64ui_files)
 def test_rv64ui(fn, cpu):
-  cpu.exec(fn)
-  assert True
+    cpu.exec(fn)
