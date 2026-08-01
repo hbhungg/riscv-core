@@ -1,7 +1,5 @@
 # riscv-core
-A small RISC-V core in ~~Python~~ Rust (and Verilog, soon).
-
-**UPDATE: The Python version is done, I am just porting over to Rust.**
+A small RISC-V core in Python (and Verilog, soon).
 
 # Prerequisite
 RISC-V test suite: https://github.com/riscv-software-src/riscv-tests. It has `ELF` and `.dump` files. Use the `ELF` for the CPU and `.dump` for debug.

@@ -66,3 +66,6 @@ REGISTERS_NAME = {
     # "f31": "ft11"
 }
 
+CSR_NAME = {
+  0x305: 'mtvec'
+}
